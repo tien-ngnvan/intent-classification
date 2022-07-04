@@ -1,14 +1,14 @@
 import tensorflow as tf
 import numpy as np
-
+import pandas as pd
 from transformers import AutoTokenizer
 
 
 class DataLoader():
     def __init__(self, dataFrame,
                  max_length=128,
-                 name_data = 'clinc150',
-                 name_pretrain = 'distilroberta-base',):
+                 name_data='clinc150',
+                 name_pretrain='distilroberta-base', ):
         """
         :param dataFrame: a dataset has two columns
         :param max_length: the longest of sentence make tokenizer
@@ -29,8 +29,15 @@ class DataLoader():
         return token['input_ids'][0], token['attention_mask'][0]
 
     def get_data(self):
+        # Process get mapping label
+        indexes = np.unique(self.dataFrame['labels'], return_index=True)[1]
+        t = [self.dataFrame['labels'][index] for index in sorted(indexes)]
+        dict_map = {}
+        for idx, value in enumerate(t):
+            dict_map.update({value: idx})
+
         X, Y = [], []
-        self.dataFrame = (self.dataFrame.sample(frac=1)).reset_index(drop=True) # shuffle data
+        self.dataFrame = (self.dataFrame.sample(frac=1)).reset_index(drop=True)  # shuffle data
         if self.name_data == 'clinc150':
             # text
             for index, item in enumerate(self.dataFrame['sentences']):
@@ -38,9 +45,9 @@ class DataLoader():
                 X.append(input_ids)
                 Y.append(attention_mask)
             # label
-            facts = np.unique(np.unique(self.dataFrame[['labels']]), return_index=True)
-            mapping = dict(zip(*facts))
-            self.dataFrame['index'] = self.dataFrame['labels'].map(mapping)
+            # facts = np.unique(np.unique(self.dataFrame['labels']), return_index=True)
+            # mapping = dict(zip(*facts))
+            self.dataFrame['index'] = self.dataFrame['labels'].map(dict_map)
 
         elif self.name_data == 'banking77':
             # text
@@ -50,11 +57,11 @@ class DataLoader():
                 Y.append(attention_mask)
 
             # label
-            facts = np.unique(np.unique(self.dataFrame[['category']]), return_index=True)
-            mapping = dict(zip(*facts))
-            self.dataFrame['index'] = self.dataFrame['category'].map(mapping)
+            self.dataFrame['index'] = self.dataFrame['category'].map(dict_map)
 
         inputs = (tf.convert_to_tensor(X), tf.convert_to_tensor(Y))
-        labels = tf.convert_to_tensor(self.dataFrame['index'])
+        labels = self.dataFrame['index']
 
         return inputs, labels
+
+

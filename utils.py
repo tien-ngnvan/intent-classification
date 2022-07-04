@@ -1,8 +1,7 @@
 import tensorflow as tf
-import official.nlp.optimization
 
+from official.nlp import optimization
 from official import nlp
-
 
 def softmax_loss(y_true, y_pred):
     # y_true: sparse target
